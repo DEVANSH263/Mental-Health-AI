@@ -9,16 +9,16 @@ export default function Home() {
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
         <div className="flex justify-center mb-6">
-          <div className="relative w-20 h-20">
+          <div className="relative w-32 h-32">
             <Image
-              src="/placeholder.svg?height=80&width=80"
-              alt="Mental Health Assistant Logo"
-              width={80}
-              height={80}
-              className="rounded-full bg-primary/10 p-2"
+              src="/ChatGPT Image Apr 10, 2025, 11_57_53 AM.png"
+              alt="Mental Wellness Logo"
+              width={128}
+              height={128}
+              className="rounded-full bg-background p-2"
             />
             <div className="absolute -right-1 -bottom-1">
-              <Sparkles className="h-6 w-6 text-primary" />
+              <Sparkles className="h-8 w-8 text-[#9D7FEA]" />
             </div>
           </div>
         </div>

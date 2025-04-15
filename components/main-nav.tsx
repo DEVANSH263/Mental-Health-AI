@@ -7,13 +7,13 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
   return (
     <nav className={cn("flex items-center space-x-4 lg:space-x-6", className)} {...props}>
       <Link href="/" className="flex items-center space-x-2">
-        <div className="relative w-8 h-8">
+        <div className="relative w-12 h-12">
           <Image
-            src="/placeholder.svg?height=32&width=32"
-            alt="Logo"
-            width={32}
-            height={32}
-            className="rounded-full bg-primary/10 p-1"
+            src="/ChatGPT Image Apr 10, 2025, 11_57_53 AM.png"
+            alt="Mental Wellness Logo"
+            width={48}
+            height={48}
+            className="rounded-full bg-background p-1"
           />
         </div>
         <span className="font-medium hidden md:inline-block">Mental Wellness</span>
