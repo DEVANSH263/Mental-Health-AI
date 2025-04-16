@@ -35,5 +35,5 @@ export default clientPromise;
 // Helper function to get the database
 export async function getDatabase(): Promise<Db> {
   const client = await clientPromise;
-  return client.db('mental_health_ai');
+  return client.db('mental-health-AI');
 } 
