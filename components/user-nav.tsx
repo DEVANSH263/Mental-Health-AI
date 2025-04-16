@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, Settings, UserCircle, KeyRound, UserPlus, LogOut } from "lucide-react"
+import { User, Settings, UserCircle, KeyRound, UserPlus, LogOut, Lock, HelpCircle, Mail } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -52,19 +52,31 @@ export function UserNav() {
         {isLoggedIn ? (
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href="/profile" className="flex items-center cursor-pointer">
+              <Link href="/profile" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
                 <UserCircle className="w-4 h-4 mr-2" />
-                <span>Profile</span>
+                <span>My Profile</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/settings" className="flex items-center cursor-pointer">
+              <Link href="/settings" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
                 <Settings className="w-4 h-4 mr-2" />
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/privacy" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
+                <Lock className="w-4 h-4 mr-2" />
+                <span>Privacy</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/help" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                <span>Help & Support</span>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="flex items-center cursor-pointer text-red-600">
+            <DropdownMenuItem onClick={handleSignOut} className="flex items-center cursor-pointer p-2 hover:bg-red-50 text-red-600">
               <LogOut className="w-4 h-4 mr-2" />
               <span>Sign Out</span>
             </DropdownMenuItem>
@@ -72,15 +84,28 @@ export function UserNav() {
         ) : (
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href="/auth/signin" className="flex items-center cursor-pointer">
+              <Link href="/auth/signin" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
                 <KeyRound className="w-4 h-4 mr-2" />
                 <span>Sign In</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/auth/signup" className="flex items-center cursor-pointer">
+              <Link href="/auth/signup" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
                 <UserPlus className="w-4 h-4 mr-2" />
                 <span>Create Account</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/help" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                <span>Help & Support</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/contact" className="flex items-center cursor-pointer p-2 hover:bg-primary/5">
+                <Mail className="w-4 h-4 mr-2" />
+                <span>Contact Us</span>
               </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>
