@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,22 +8,74 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Bot, Send, User, Sparkles } from "lucide-react"
 
 type Message = {
-  id: number
+  id: string | number
   content: string
   sender: "user" | "bot"
   timestamp: Date
 }
 
 export default function ChatbotPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      content: "Hi there! I'm your supportive companion. How are you feeling today?",
-      sender: "bot",
-      timestamp: new Date(),
-    },
-  ])
-  const [input, setInput] = useState("")
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch messages when page loads
+  useEffect(() => {
+    async function fetchMessages() {
+      try {
+        console.log('Fetching chat messages...');
+        const response = await fetch('/api/chat');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch messages');
+        }
+
+        const data = await response.json();
+        console.log('Fetched messages:', data);
+
+        // Convert the database messages to our Message format
+        const convertedMessages: Message[] = data.map((msg: any) => ([
+          {
+            id: msg._id,
+            content: msg.message,
+            sender: "user",
+            timestamp: new Date(msg.timestamp),
+          },
+          {
+            id: msg._id + "_response",
+            content: msg.response,
+            sender: "bot",
+            timestamp: new Date(msg.timestamp),
+          }
+        ])).flat();
+
+        // Add initial greeting if no messages
+        if (convertedMessages.length === 0) {
+          convertedMessages.unshift({
+            id: "initial",
+            content: "Hi there! I'm your supportive companion. How are you feeling today?",
+            sender: "bot",
+            timestamp: new Date(),
+          });
+        }
+
+        setMessages(convertedMessages);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+        // Show initial message even if fetch fails
+        setMessages([{
+          id: "initial",
+          content: "Hi there! I'm your supportive companion. How are you feeling today?",
+          sender: "bot",
+          timestamp: new Date(),
+        }]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchMessages();
+  }, []);
 
   const handleSendMessage = async () => {
     if (!input.trim()) return

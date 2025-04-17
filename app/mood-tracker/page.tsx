@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,37 +19,54 @@ type MoodEntry = {
 }
 
 export default function MoodTrackerPage() {
-  const [entries, setEntries] = useState<MoodEntry[]>([
-    {
-      id: 1,
-      date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-      mood: "good",
-      notes: "Had a productive day at work and went for a walk in the evening. Feeling more balanced today.",
-      sentimentScore: 0.7,
-      emotions: ["content", "peaceful", "accomplished"],
-    },
-    {
-      id: 2,
-      date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-      mood: "okay",
-      notes:
-        "Feeling a bit overwhelmed with upcoming deadlines, but managed to practice some deep breathing exercises which helped.",
-      sentimentScore: 0.5,
-      emotions: ["neutral", "thoughtful", "calm"],
-    },
-    {
-      id: 3,
-      date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      mood: "great",
-      notes:
-        "Connected with friends today and felt really present in the moment. Made progress on personal projects too.",
-      sentimentScore: 0.9,
-      emotions: ["joyful", "grateful", "energetic"],
-    },
-  ])
+  const [entries, setEntries] = useState<MoodEntry[]>([]);
+  const [currentMood, setCurrentMood] = useState<MoodEntry["mood"]>("okay");
+  const [notes, setNotes] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [currentMood, setCurrentMood] = useState<MoodEntry["mood"]>("okay")
-  const [notes, setNotes] = useState("")
+  // Fetch entries when page loads
+  useEffect(() => {
+    async function fetchEntries() {
+      try {
+        console.log('Fetching journal entries...');
+        const response = await fetch('/api/journal');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch entries');
+        }
+
+        const data = await response.json();
+        console.log('Fetched entries:', data);
+
+        // Convert the database entries to MoodEntry format
+        const convertedEntries: MoodEntry[] = data.map((entry: any) => ({
+          id: entry._id,
+          date: new Date(entry.timestamp),
+          mood: numberToMood[entry.mood], // Convert number back to mood string
+          notes: entry.content,
+          sentimentScore: entry.sentiment,
+          emotions: entry.tags || [],
+        }));
+
+        setEntries(convertedEntries);
+      } catch (error) {
+        console.error('Error fetching entries:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchEntries();
+  }, []);
+
+  // Convert number to mood string
+  const numberToMood: { [key: number]: MoodEntry["mood"] } = {
+    1: "terrible",
+    2: "bad",
+    3: "okay",
+    4: "good",
+    5: "great"
+  };
 
   const handleSubmit = async () => {
     if (!notes.trim()) {
