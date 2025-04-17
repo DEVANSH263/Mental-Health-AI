@@ -5,7 +5,10 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+const options = {
+  connectTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
@@ -18,6 +21,7 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalWithMongo._mongoClientPromise) {
+    console.log('Creating new MongoDB connection...');
     client = new MongoClient(uri, options);
     globalWithMongo._mongoClientPromise = client.connect();
   }
@@ -34,6 +38,21 @@ export default clientPromise;
 
 // Helper function to get the database
 export async function getDatabase(): Promise<Db> {
-  const client = await clientPromise;
-  return client.db('mental-health-AI');
+  try {
+    console.log('Getting database connection...');
+    const client = await clientPromise;
+    console.log('Connected to MongoDB client');
+    
+    const db = client.db('mental-health-AI');
+    console.log('Using database:', db.databaseName);
+    
+    // Verify connection
+    await db.command({ ping: 1 });
+    console.log('Database ping successful');
+    
+    return db;
+  } catch (error) {
+    console.error('Error connecting to database:', error);
+    throw error;
+  }
 } 

@@ -28,6 +28,8 @@ export default function ChatbotPage() {
   const handleSendMessage = async () => {
     if (!input.trim()) return
 
+    console.log('Starting to send message:', input);
+
     // Add user message
     const userMessage: Message = {
       id: messages.length + 1,
@@ -39,27 +41,52 @@ export default function ChatbotPage() {
     setMessages((prev) => [...prev, userMessage])
     setInput("")
 
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponses = [
-        "I hear you, and I understand how challenging that can feel. Would you like to talk more about what's going on?",
-        "Thank you for sharing that with me. It takes courage to express your feelings. What else is on your mind today?",
-        "I'm here for you. How long have you been experiencing these feelings?",
-        "That sounds really difficult. Have you found any activities or practices that help you feel better when this happens?",
-        "I appreciate you opening up. Sometimes identifying what triggers these feelings can help us understand them better. Have you noticed any patterns?",
-      ]
+    try {
+      console.log('Making API call to /api/chat...');
+      // Call the API endpoint
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: input,
+          userId: null, // You can add user authentication later
+        }),
+      });
 
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)]
+      console.log('API Response status:', response.status);
+      console.log('API Response headers:', response.headers);
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Failed to send message: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response data:', data);
+
+      // Add bot response
       const botMessage: Message = {
         id: messages.length + 2,
-        content: randomResponse,
+        content: data.response,
         sender: "bot",
         timestamp: new Date(),
       }
 
-      setMessages((prev) => [...prev, botMessage])
-    }, 1000)
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error in handleSendMessage:', error);
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: messages.length + 2,
+        content: "Sorry, I encountered an error. Please try again.",
+        sender: "bot",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   }
 
   return (
