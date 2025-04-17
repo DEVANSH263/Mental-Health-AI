@@ -51,22 +51,66 @@ export default function MoodTrackerPage() {
   const [currentMood, setCurrentMood] = useState<MoodEntry["mood"]>("okay")
   const [notes, setNotes] = useState("")
 
-  const handleSubmit = () => {
-    // In a real app, you would send this to your backend for sentiment analysis
-    const newEntry: MoodEntry = {
-      id: entries.length + 1,
-      date: new Date(),
-      mood: currentMood,
-      notes: notes,
-      // These would normally be calculated by your backend
-      sentimentScore: Math.random(),
-      emotions: ["simulated", "emotion", "analysis"],
+  const handleSubmit = async () => {
+    if (!notes.trim()) {
+      return; // Don't submit if notes are empty
     }
 
-    setEntries([...entries, newEntry])
-    setCurrentMood("okay")
-    setNotes("")
-  }
+    try {
+      console.log('Sending journal entry to API...');
+      
+      // Convert mood to number (1-5)
+      const moodToNumber = {
+        terrible: 1,
+        bad: 2,
+        okay: 3,
+        good: 4,
+        great: 5
+      };
+
+      const response = await fetch('/api/journal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: notes,
+          mood: moodToNumber[currentMood],
+          userId: null, // You can add user authentication later
+          tags: [], // Optional tags
+          activities: [], // Optional activities
+        }),
+      });
+
+      console.log('API Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Failed to save journal entry: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('Successfully saved journal entry:', data);
+
+      // Add to local state for immediate UI update
+      const newEntry: MoodEntry = {
+        id: entries.length + 1,
+        date: new Date(),
+        mood: currentMood,
+        notes: notes,
+        sentimentScore: 0,
+        emotions: [],
+      };
+
+      setEntries([...entries, newEntry]);
+      setCurrentMood("okay");
+      setNotes("");
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      // You might want to show an error message to the user here
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
