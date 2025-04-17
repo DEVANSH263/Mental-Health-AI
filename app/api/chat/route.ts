@@ -123,4 +123,30 @@ export async function POST(request: Request) {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-} 
+}
+
+// Add GET endpoint to fetch messages
+export async function GET(request: Request) {
+  try {
+    console.log('=== Starting fetch messages ===');
+    
+    const db = await getDatabase();
+    console.log('Successfully connected to database');
+    
+    // Fetch all messages, sorted by timestamp
+    const messages = await db.collection('chat_messages')
+      .find({})
+      .sort({ timestamp: 1 })  // Show oldest first
+      .toArray();
+    
+    console.log(`Found ${messages.length} messages`);
+    
+    return NextResponse.json(messages);
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+}

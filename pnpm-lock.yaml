@@ -11,6 +11,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.55.0(react@19.1.0))
+      '@huggingface/inference':
+        specifier: ^3.8.1
+        version: 3.8.1
       '@radix-ui/react-accordion':
         specifier: ^1.2.2
         version: 1.2.4(@types/react-dom@19.1.2(@types/react@19.1.2))(@types/react@19.1.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -223,6 +226,17 @@ packages:
     resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
     peerDependencies:
       react-hook-form: ^7.0.0
+
+  '@huggingface/inference@3.8.1':
+    resolution: {integrity: sha512-Kq+EvWAAWOa0oWrVrHZZzRmiqw0edr6UUCM6+ZvvHUDbcokc33aUqr8djsUSf6iNDnpBobdswYAJ+hwGo//i3A==}
+    engines: {node: '>=18'}
+
+  '@huggingface/jinja@0.3.4':
+    resolution: {integrity: sha512-kFFQWJiWwvxezKQnvH1X7GjsECcMljFx+UZK9hx6P26aVHwwidJVTB0ptLfRVZQvVkOGHoMmTGvo4nT0X9hHOA==}
+    engines: {node: '>=18'}
+
+  '@huggingface/tasks@0.18.8':
+    resolution: {integrity: sha512-sgrONypSZDOwUKpvBxfzO/cfKU5lKhErG1souoyE7G7QAH+dQDshMFL8h7phTkbu3GR5+f4koAD8tWk0LSDc3w==}
 
   '@img/sharp-darwin-arm64@0.33.5':
     resolution: {integrity: sha512-UT4p+iz/2H4twwAoLCqfA9UH5pI6DggwKEGuaPy7nCVQ8ZsiY5PIcrRvD1DzuY3qYL07NtIQcWnBSY/heikIFQ==}
@@ -2027,6 +2041,15 @@ snapshots:
   '@hookform/resolvers@3.10.0(react-hook-form@7.55.0(react@19.1.0))':
     dependencies:
       react-hook-form: 7.55.0(react@19.1.0)
+
+  '@huggingface/inference@3.8.1':
+    dependencies:
+      '@huggingface/jinja': 0.3.4
+      '@huggingface/tasks': 0.18.8
+
+  '@huggingface/jinja@0.3.4': {}
+
+  '@huggingface/tasks@0.18.8': {}
 
   '@img/sharp-darwin-arm64@0.33.5':
     optionalDependencies:
