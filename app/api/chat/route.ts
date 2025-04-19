@@ -78,6 +78,42 @@ function detectCategory(message: string): keyof typeof responses {
   return 'default';
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+const API_TIMEOUT = 15000; // 15 seconds
+
+// Available free models
+const MODELS = {
+  DEEPSEEK: "deepseek/deepseek-r1:free",
+  MISTRAL: "mistralai/mistral-7b-instruct:free",
+  HERMES: "nousresearch/nous-hermes-2-mixtral-8x7b-dpo:free",
+  PHI: "microsoft/phi-2:free"
+} as const;
+
+// Current model to use
+const CURRENT_MODEL = MODELS.MISTRAL; // Mistral is often faster than DeepSeek
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+    
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      return fetchWithRetry(url, options, retries - 1);
+    }
+    throw error;
+  }
+}
+
 export async function GET() {
   try {
     console.log('Fetching chat messages...');
@@ -107,7 +143,7 @@ export async function POST(req: Request) {
   try {
     const { message } = await req.json();
     
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetchWithRetry('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
@@ -116,37 +152,46 @@ export async function POST(req: Request) {
         'X-Title': 'Mental Health AI'
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-r1:free",
+        model: CURRENT_MODEL,
         messages: [
           {
             role: "system",
-            content: "You are a compassionate mental health counselor. Your responses should be empathetic, supportive, and non-judgmental. Focus on active listening, validating feelings, and providing gentle guidance. Always maintain professional boundaries and encourage seeking professional help when needed."
+            content: "You are a compassionate mental health counselor. Keep responses concise and focused. Be empathetic but direct. Maximum 2-3 sentences per response."
           },
           {
             role: "user",
             content: message
           }
-        ]
+        ],
+        temperature: 0.7,
+        max_tokens: 150,
+        stream: false
       })
     });
 
-    const data = await response.json();
-    
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Failed to get response from AI');
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to get response from AI');
     }
+
+    const data = await response.json();
 
     return NextResponse.json({
       success: true,
       data: {
-        response: data.choices[0].message.content
+        response: data.choices[0].message.content,
+        model: CURRENT_MODEL // Send back which model was used
       }
     });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to process your request'
+      error: error instanceof Error 
+        ? error.message.includes('timeout') 
+          ? 'The AI service is taking longer than expected to respond. Please try again in a moment.'
+          : 'Failed to connect to the AI service. Please try again later.'
+        : 'An unexpected error occurred'
     }, { status: 500 });
   }
 } 

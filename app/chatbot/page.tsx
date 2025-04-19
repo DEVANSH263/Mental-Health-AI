@@ -2,38 +2,90 @@
 
 import { useState } from 'react';
 
+interface ChatMessage {
+  text: string;
+  isUser: boolean;
+}
+
 export default function ChatbotPage() {
-  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     // Add user message
     const userMessage = { text: input, isUser: true };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
     try {
-      // Send to API
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input })
+      // Add loading message
+      setMessages(prev => [...prev, { text: "Thinking...", isUser: false }]);
+
+      // Set timeout for the API call
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out')), 30000);
       });
 
-      const data = await response.json();
-      
-      // Add bot response
-      if (data.success) {
-        setMessages(prev => [...prev, { text: data.data.response, isUser: false }]);
+      // Send to API with retry logic
+      let attempts = 0;
+      const maxAttempts = 3;
+      let lastError: Error | null = null;
+
+      while (attempts < maxAttempts) {
+        try {
+          const responsePromise = fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: input })
+          });
+
+          const response = await Promise.race([responsePromise, timeoutPromise]) as Response;
+          const data = await response.json();
+
+          if (!data.success) {
+            throw new Error(data.error || 'Failed to get response');
+          }
+
+          // Remove loading message and add bot response
+          setMessages(prev => {
+            const newMessages = [...prev];
+            newMessages.pop(); // Remove loading message
+            return [...newMessages, { 
+              text: data.data.response, 
+              isUser: false
+            }];
+          });
+          return; // Success, exit the loop
+        } catch (error) {
+          lastError = error as Error;
+          attempts++;
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
       }
+
+      // If we get here, all attempts failed
+      throw lastError || new Error('Failed to get response after multiple attempts');
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, { 
-        text: "Sorry, I'm having trouble responding right now.", 
-        isUser: false 
-      }]);
+      // Remove loading message and add error message
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages.pop(); // Remove loading message
+        return [...newMessages, { 
+          text: error instanceof Error && error.message === 'Request timed out'
+            ? "The response is taking longer than usual. Please try again in a moment."
+            : "I'm having trouble connecting right now. Please try again in a moment.", 
+          isUser: false 
+        }];
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -61,7 +113,9 @@ export default function ChatbotPage() {
                   className={`px-5 py-3 max-w-[80%] ${
                     msg.isUser 
                       ? 'bg-purple-600 text-white rounded-2xl rounded-tr-sm' 
-                      : 'bg-[#1D1D4D] text-gray-200 rounded-2xl rounded-tl-sm'
+                      : msg.text === "Thinking..." 
+                        ? 'bg-[#1D1D4D] text-gray-400 rounded-2xl rounded-tl-sm animate-pulse'
+                        : 'bg-[#1D1D4D] text-gray-200 rounded-2xl rounded-tl-sm'
                   }`}
                 >
                   {msg.text}
@@ -78,12 +132,18 @@ export default function ChatbotPage() {
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="Type your message..."
               className="flex-1 bg-[#1D1D4D] text-gray-200 border-none outline-none placeholder:text-gray-500 py-4 px-5 rounded-2xl"
+              disabled={isLoading}
             />
             <button
               onClick={sendMessage}
-              className="px-8 rounded-2xl bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium"
+              className={`px-8 rounded-2xl ${
+                isLoading 
+                  ? 'bg-purple-800 cursor-not-allowed' 
+                  : 'bg-purple-600 hover:bg-purple-700'
+              } text-white transition-colors font-medium`}
+              disabled={isLoading}
             >
-              Send
+              {isLoading ? 'Sending...' : 'Send'}
             </button>
           </div>
         </div>
