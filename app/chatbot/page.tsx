@@ -1,237 +1,117 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Bot, Send, User, Sparkles } from "lucide-react"
-
-type Message = {
-  id: string | number
-  content: string
-  sender: "user" | "bot"
-  timestamp: Date
-}
+import { useState } from 'react';
 
 export default function ChatbotPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean }>>([]);
+  const [input, setInput] = useState('');
 
-  // Fetch messages when page loads
-  useEffect(() => {
-    async function fetchMessages() {
-      try {
-        console.log('Fetching chat messages...');
-        const response = await fetch('/api/chat');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch messages');
-        }
-
-        const data = await response.json();
-        console.log('Fetched messages:', data);
-
-        // Convert the database messages to our Message format
-        const convertedMessages: Message[] = data.map((msg: any) => ([
-          {
-            id: msg._id,
-            content: msg.message,
-            sender: "user",
-            timestamp: new Date(msg.timestamp),
-          },
-          {
-            id: msg._id + "_response",
-            content: msg.response,
-            sender: "bot",
-            timestamp: new Date(msg.timestamp),
-          }
-        ])).flat();
-
-        // Add initial greeting if no messages
-        if (convertedMessages.length === 0) {
-          convertedMessages.unshift({
-            id: "initial",
-            content: "Hi there! I'm your supportive companion. How are you feeling today?",
-            sender: "bot",
-            timestamp: new Date(),
-          });
-        }
-
-        setMessages(convertedMessages);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-        // Show initial message even if fetch fails
-        setMessages([{
-          id: "initial",
-          content: "Hi there! I'm your supportive companion. How are you feeling today?",
-          sender: "bot",
-          timestamp: new Date(),
-        }]);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchMessages();
-  }, []);
-
-  const handleSendMessage = async () => {
-    if (!input.trim()) return
-
-    console.log('Starting to send message:', input);
+  const sendMessage = async () => {
+    if (!input.trim()) return;
 
     // Add user message
-    const userMessage: Message = {
-      id: messages.length + 1,
-      content: input,
-      sender: "user",
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
+    const userMessage = { text: input, isUser: true };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
 
     try {
-      console.log('Making API call to /api/chat...');
-      // Call the API endpoint
+      // Send to API
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: input,
-          userId: null, // You can add user authentication later
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input })
       });
 
-      console.log('API Response status:', response.status);
-      console.log('API Response headers:', response.headers);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', errorText);
-        throw new Error(`Failed to send message: ${errorText}`);
-      }
-
       const data = await response.json();
-      console.log('API Response data:', data);
-
+      
       // Add bot response
-      const botMessage: Message = {
-        id: messages.length + 2,
-        content: data.response,
-        sender: "bot",
-        timestamp: new Date(),
+      if (data.success) {
+        setMessages(prev => [...prev, { text: data.data.response, isUser: false }]);
       }
-
-      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error in handleSendMessage:', error);
-      // Add error message to chat
-      const errorMessage: Message = {
-        id: messages.length + 2,
-        content: "Sorry, I encountered an error. Please try again.",
-        sender: "bot",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage]);
+      console.error('Error:', error);
+      setMessages(prev => [...prev, { 
+        text: "Sorry, I'm having trouble responding right now.", 
+        isUser: false 
+      }]);
     }
-  }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-primary/80 to-primary bg-clip-text text-transparent">
-          Supportive Chat
-        </h1>
-        <p className="text-muted-foreground max-w-xl mx-auto">
-          A safe space to express yourself and receive compassionate support. Your conversations are private and secure.
-        </p>
-      </div>
-
-      <div className="max-w-xl mx-auto mb-6 p-4 bg-primary/5 rounded-lg border border-primary/10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-sm">
-              <span className="font-medium">Supportive Tip:</span> Try to be specific about how you're feeling. Instead
-              of saying "I feel bad," try "I feel anxious about my upcoming presentation."
-            </p>
+    <div className="min-h-screen bg-[#0B0B1D]">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+              <span className="text-purple-400 text-xl">⚡</span>
+            </div>
+            <h1 className="text-white text-3xl">Chat Support</h1>
           </div>
         </div>
-      </div>
-
-      <Card className="border rounded-xl shadow-md mb-4 overflow-hidden max-w-3xl mx-auto">
-        <CardContent className="p-4 h-[500px] flex flex-col bg-gradient-to-b from-background to-primary/5">
-          <div className="flex-1 overflow-y-auto space-y-4 p-4">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-                <div className="flex items-start gap-2 max-w-[80%]">
-                  {message.sender === "bot" && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/20 text-primary">
-                        <Bot className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div
-                    className={`rounded-2xl px-4 py-2 shadow-sm ${
-                      message.sender === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted/50 border border-primary/10"
-                    }`}
-                  >
-                    <p>{message.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                  {message.sender === "user" && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-muted">
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+        <p className="text-gray-400 mb-8">A safe space to share your thoughts and feelings.</p>
+        
+        <div className="bg-[#13133D] rounded-3xl p-6 shadow-xl">
+          <div className="h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-900/50 scrollbar-track-transparent mb-6">
+            {messages.map((msg, i) => (
+              <div 
+                key={i} 
+                className={`mb-4 flex ${msg.isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
+              >
+                <div 
+                  className={`px-5 py-3 max-w-[80%] ${
+                    msg.isUser 
+                      ? 'bg-purple-600 text-white rounded-2xl rounded-tr-sm' 
+                      : 'bg-[#1D1D4D] text-gray-200 rounded-2xl rounded-tl-sm'
+                  }`}
+                >
+                  {msg.text}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center gap-2 pt-4 border-t">
-            <Input
-              placeholder="Type how you're feeling..."
+          <div className="flex gap-4">
+            <input
+              type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSendMessage()
-                }
-              }}
-              className="flex-1 rounded-full border-primary/20 focus-visible:ring-primary/30"
+              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder="Type your message..."
+              className="flex-1 bg-[#1D1D4D] text-gray-200 border-none outline-none placeholder:text-gray-500 py-4 px-5 rounded-2xl"
             />
-            <Button onClick={handleSendMessage} size="icon" className="rounded-full h-10 w-10">
-              <Send className="h-4 w-4" />
-            </Button>
+            <button
+              onClick={sendMessage}
+              className="px-8 rounded-2xl bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium"
+            >
+              Send
+            </button>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="text-sm text-muted-foreground text-center max-w-xl mx-auto">
-        <p>
-          Remember, while I'm here to support you, I'm not a replacement for professional help. If you're in crisis,
-          please reach out to a mental health professional or call a crisis helpline.
-        </p>
+        </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: rgba(147, 51, 234, 0.2);
+          border-radius: 2px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+          background: rgba(147, 51, 234, 0.3);
+        }
+      `}</style>
     </div>
-  )
+  );
 }
 

@@ -17,7 +17,7 @@ export async function analyzeSentiment(text: string) {
 // Simulated emotion detection
 function simulateEmotionDetection(text: string) {
   const emotions = ["happy", "sad", "angry", "anxious", "calm", "excited", "tired", "stressed", "relaxed"]
-  const randomEmotions = []
+  const randomEmotions: string[] = []
 
   // Randomly select 1-3 emotions
   const count = Math.floor(Math.random() * 3) + 1
