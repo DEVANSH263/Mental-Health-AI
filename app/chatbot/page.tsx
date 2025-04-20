@@ -18,6 +18,7 @@ export default function ChatbotPage() {
     // Add user message
     const userMessage = { text: input, isUser: true };
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
@@ -25,65 +26,67 @@ export default function ChatbotPage() {
       // Add loading message
       setMessages(prev => [...prev, { text: "Thinking...", isUser: false }]);
 
-      // Set timeout for the API call
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out')), 30000);
+      // Set timeout for the fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased timeout to 20s
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: currentInput }),
+        signal: controller.signal
       });
 
-      // Send to API with retry logic
-      let attempts = 0;
-      const maxAttempts = 3;
-      let lastError: Error | null = null;
+      clearTimeout(timeoutId);
 
-      while (attempts < maxAttempts) {
-        try {
-          const responsePromise = fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: input })
-          });
+      const data = await response.json();
 
-          const response = await Promise.race([responsePromise, timeoutPromise]) as Response;
-          const data = await response.json();
-
-          if (!data.success) {
-            throw new Error(data.error || 'Failed to get response');
-          }
-
-          // Remove loading message and add bot response
-          setMessages(prev => {
-            const newMessages = [...prev];
-            newMessages.pop(); // Remove loading message
-            return [...newMessages, { 
-              text: data.data.response, 
-              isUser: false
-            }];
-          });
-          return; // Success, exit the loop
-        } catch (error) {
-          lastError = error as Error;
-          attempts++;
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        }
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Server error');
       }
 
-      // If we get here, all attempts failed
-      throw lastError || new Error('Failed to get response after multiple attempts');
+      // Remove loading message and add bot response
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages.pop(); // Remove loading message
+        return [...newMessages, { 
+          text: data.data.response, 
+          isUser: false
+        }];
+      });
     } catch (error) {
       console.error('Error:', error);
       // Remove loading message and add error message
       setMessages(prev => {
         const newMessages = [...prev];
         newMessages.pop(); // Remove loading message
+        let errorMessage = "I'm having trouble connecting right now. Please try again in a moment.";
+        
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            errorMessage = "The response is taking too long. Please try again.";
+          } else if (error.message.includes('Rate limit')) {
+            errorMessage = "We're receiving too many requests. Please wait a moment and try again.";
+          } else if (error.message.includes('configuration')) {
+            errorMessage = "There's a technical issue with the service. Please try again later.";
+          } else if (error.message.includes('unavailable')) {
+            errorMessage = "The AI service is temporarily unavailable. Please try again in a few minutes.";
+          } else {
+            errorMessage = error.message || "There was a problem with the server. Please try again.";
+          }
+        }
+        
         return [...newMessages, { 
-          text: error instanceof Error && error.message === 'Request timed out'
-            ? "The response is taking longer than usual. Please try again in a moment."
-            : "I'm having trouble connecting right now. Please try again in a moment.", 
+          text: errorMessage,
           isUser: false 
         }];
       });
+
+      // Add delay for rate limit and server errors
+      if (error instanceof Error && 
+          (error.message.includes('Rate limit') || error.message.includes('Server error'))) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -92,13 +95,21 @@ export default function ChatbotPage() {
   return (
     <div className="min-h-screen bg-[#0B0B1D]">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
               <span className="text-purple-400 text-xl">⚡</span>
             </div>
             <h1 className="text-white text-3xl">Chat Support</h1>
           </div>
+          {messages.length > 0 && (
+            <button
+              onClick={() => setMessages([])}
+              className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm transition-colors"
+            >
+              Clear Chat
+            </button>
+          )}
         </div>
         <p className="text-gray-400 mb-8">A safe space to share your thoughts and feelings.</p>
         
@@ -129,7 +140,7 @@ export default function ChatbotPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
               placeholder="Type your message..."
               className="flex-1 bg-[#1D1D4D] text-gray-200 border-none outline-none placeholder:text-gray-500 py-4 px-5 rounded-2xl"
               disabled={isLoading}
