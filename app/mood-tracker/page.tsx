@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { BarChart, Calendar, LineChart, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 
 type MoodEntry = {
   id: number
@@ -154,8 +153,8 @@ export default function MoodTrackerPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        <Card className="md:col-span-1 border rounded-xl shadow-md overflow-hidden bg-gradient-to-b from-background to-primary/5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+        <Card className="border rounded-xl shadow-md overflow-hidden bg-gradient-to-b from-background to-primary/5">
           <CardHeader className="pb-2">
             <CardTitle>How Are You Today?</CardTitle>
             <CardDescription>Take a moment to check in with yourself</CardDescription>
@@ -241,115 +240,58 @@ export default function MoodTrackerPage() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 border rounded-xl shadow-md overflow-hidden">
+        <Card className="border rounded-xl shadow-md overflow-hidden">
           <CardHeader className="pb-2 bg-primary/5">
-            <CardTitle>Your Wellness Journey</CardTitle>
-            <CardDescription>See how your mood changes over time</CardDescription>
+            <CardTitle>Your Journal Entries</CardTitle>
+            <CardDescription>Review your previous entries</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="chart">
-              <TabsList className="mb-4 bg-muted/50">
-                <TabsTrigger value="chart" className="rounded-md data-[state=active]:bg-primary/10">
-                  <LineChart className="h-4 w-4 mr-2" />
-                  Trends
-                </TabsTrigger>
-                <TabsTrigger value="calendar" className="rounded-md data-[state=active]:bg-primary/10">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Calendar
-                </TabsTrigger>
-                <TabsTrigger value="entries" className="rounded-md data-[state=active]:bg-primary/10">
-                  <BarChart className="h-4 w-4 mr-2" />
-                  Journal
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="chart" className="space-y-4">
-                <div className="h-[300px] flex items-center justify-center border rounded-md p-4 bg-primary/5">
-                  <p className="text-muted-foreground text-center max-w-md">
-                    Your mood trend visualization would appear here, showing your emotional patterns over time to help
-                    you understand your wellbeing journey.
-                  </p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="calendar" className="space-y-4">
-                <div className="h-[300px] flex items-center justify-center border rounded-md p-4 bg-primary/5">
-                  <p className="text-muted-foreground text-center max-w-md">
-                    A calendar view would display your moods by date, with gentle color coding to help you visualize
-                    your emotional patterns throughout the month.
-                  </p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="entries" className="space-y-4">
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-                  {entries.map((entry) => (
-                    <Card key={entry.id} className="border border-primary/10 shadow-sm">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-medium">
-                              {entry.date.toLocaleDateString("en-US", {
-                                weekday: "long",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {entry.date.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                          </div>
-                          <div className="text-3xl">
-                            {entry.mood === "terrible" && "😢"}
-                            {entry.mood === "bad" && "😕"}
-                            {entry.mood === "okay" && "😐"}
-                            {entry.mood === "good" && "🙂"}
-                            {entry.mood === "great" && "😄"}
-                          </div>
-                        </div>
-                        <p className="text-sm">{entry.notes}</p>
-                        {entry.emotions && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {entry.emotions.map((emotion) => (
-                              <span key={emotion} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                                {emotion}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+              {entries
+                .sort((a, b) => b.date.getTime() - a.date.getTime()) // Sort in reverse chronological order
+                .map((entry) => (
+                <Card key={entry.id} className="border border-primary/10 shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium">
+                          {entry.date.toLocaleDateString("en-US", {
+                            weekday: "long",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {entry.date.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      <div className="text-3xl">
+                        {entry.mood === "terrible" && "😢"}
+                        {entry.mood === "bad" && "😕"}
+                        {entry.mood === "okay" && "😐"}
+                        {entry.mood === "good" && "🙂"}
+                        {entry.mood === "great" && "😄"}
+                      </div>
+                    </div>
+                    <p className="text-sm">{entry.notes}</p>
+                    {entry.emotions && entry.emotions.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {entry.emotions.map((emotion) => (
+                          <span key={emotion} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                            {emotion}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="mt-8 max-w-3xl mx-auto text-center">
-        <h2 className="text-xl font-semibold mb-4">Mood Insights</h2>
-        <p className="text-muted-foreground mb-6">
-          Understanding your emotional patterns can help you develop better coping strategies and improve your overall
-          wellbeing.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-            <h3 className="font-medium mb-2">Track Regularly</h3>
-            <p className="text-sm text-muted-foreground">Daily entries help identify patterns more accurately</p>
-          </div>
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-            <h3 className="font-medium mb-2">Be Specific</h3>
-            <p className="text-sm text-muted-foreground">Note what might have influenced your mood each day</p>
-          </div>
-          <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-            <h3 className="font-medium mb-2">Reflect Monthly</h3>
-            <p className="text-sm text-muted-foreground">Look back to see your progress and growth</p>
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -1,0 +1,59 @@
+# Mental Health Sentiment Analysis System - Simple Explanation
+
+## What is it?
+A system that analyzes text to understand emotional states and mental health indicators using three different AI models.
+
+## How it Works
+
+### 1. Text Processing
+- Takes in text (like social media posts, messages, or journal entries)
+- Cleans and prepares the text for analysis
+- Identifies important words and phrases
+
+### 2. Three Analysis Models
+
+#### Model 1: Basic Analysis (Logistic Regression)
+- Quick and simple analysis
+- Good for straightforward emotional expressions
+- Fast processing
+- Example: "I feel happy today" → Positive
+
+#### Model 2: Complex Analysis (SVM)
+- Handles more complex emotional expressions
+- Better at understanding mixed feelings
+- Good with sarcasm and subtle emotions
+- Example: "Not sure if I'm happy or just pretending" → Mixed/Complex
+
+#### Model 3: Deep Understanding (Deep Learning)
+- Most advanced analysis
+- Understands context and relationships
+- Best for complex mental health discussions
+- Example: Long paragraphs about emotional state → Detailed analysis
+
+### 3. Results
+- Combines results from all three models
+- Provides sentiment classification:
+  - Positive
+  - Neutral
+  - Negative
+- Gives confidence scores
+- Highlights key emotional indicators
+
+## Key Features
+- Real-time analysis
+- Privacy-focused
+- Easy to use
+- Accurate results
+- Handles different types of text
+
+## Use Cases
+- Mental health monitoring
+- Support system integration
+- Research applications
+- Personal well-being tracking
+
+## Technical Requirements
+- Python environment
+- Basic computing resources
+- Internet connection for updates
+- Storage for data and models 
