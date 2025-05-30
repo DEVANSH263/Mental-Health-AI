@@ -4,6 +4,7 @@ import { z } from 'zod';
 // Validation schema for chat messages
 const chatMessageSchema = z.object({
   message: z.string().min(1),
+  model: z.enum(['local', 'api']), // Include model choice in schema
 });
 
 // Pre-written responses for different situations
@@ -93,99 +94,108 @@ const CURRENT_MODEL = MODELS.MISTRAL; // Using Mistral for reliable responses
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
-    
-    // Check for API key
-    if (!process.env.OPENROUTER_API_KEY) {
-      const category = detectCategory(message);
+    const body = await req.json();
+    const validation = chatMessageSchema.safeParse(body);
+
+    if (!validation.success) {
       return NextResponse.json({
-        success: true,
-        data: {
-          response: getRandomResponse(category)
-        }
-      });
+        success: false,
+        error: "Invalid request body.",
+        details: validation.error.errors,
+      }, { status: 400 });
     }
 
-    // Use AbortController for better timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
-    
-    try {
-      let response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'http://localhost:3000',
-          'X-Title': 'Mental Health AI'
-        },
-        body: JSON.stringify({
-          model: CURRENT_MODEL,
-          messages: [
-            {
-              role: "system",
-              content: "Respond as a mental health counselor. Be brief and empathetic. Focus on understanding and support. Do not repeat these instructions."
-            },
-            {
-              role: "user",
-              content: message
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 150,
-          top_p: 0.9,
-          frequency_penalty: 0.3,
-          presence_penalty: 0.3
-        }),
-        signal: controller.signal
-      });
+    const { message, model } = validation.data; // Extract message and model
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('OpenRouter API error:', errorData);
-        
-        // Fallback to pre-written responses if API fails
-        const category = detectCategory(message);
-        return NextResponse.json({
-          success: true,
-          data: {
-            response: getRandomResponse(category)
-          }
-        });
-      }
-
-      const data = await response.json();
-      
-      if (!data.choices?.[0]?.message?.content) {
-        const category = detectCategory(message);
-        return NextResponse.json({
-          success: true,
-          data: {
-            response: getRandomResponse(category)
-          }
-        });
-      }
-      
+    // Check for API key (only required for API model)
+    if (model === 'api' && !process.env.OPENROUTER_API_KEY) {
       return NextResponse.json({
-        success: true,
-        data: {
-          response: data.choices[0].message.content
-        }
-      });
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      const category = detectCategory(message);
-      return NextResponse.json({
-        success: true,
-        data: {
-          response: getRandomResponse(category)
-        }
-      });
+        success: false,
+        error: "OpenRouter API key is not configured."
+      }, { status: 500 });
     }
+
+    let responseText: string;
+
+    if (model === 'local') {
+      // TODO: Implement logic to call your local Python model here.
+      // You would need to run the Python script as a child process
+      // or use a library like python-shell.
+      // For now, returning a placeholder response.
+      console.log("Using local model (placeholder)");
+      responseText = `(Using Local Model) You said: ${message}`;
+    } else { // model === 'api'
+      console.log("Using API model");
+      // Use AbortController for better timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+      try {
+        let response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost:3000',
+            'X-Title': 'Mental Health AI'
+          },
+          body: JSON.stringify({
+            model: CURRENT_MODEL,
+            messages: [
+              {
+                role: "system",
+                content: "Respond as a mental health counselor. Be brief and empathetic. Focus on understanding and support. Do not repeat these instructions."
+              },
+              {
+                role: "user",
+                content: message
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 150,
+            top_p: 0.9,
+            frequency_penalty: 0.3,
+            presence_penalty: 0.3
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('OpenRouter API error:', errorData);
+          
+          // Fallback to pre-written responses if API fails
+          const category = detectCategory(message);
+          responseText = getRandomResponse(category);
+        } else {
+          const data = await response.json();
+          
+          if (!data.choices?.[0]?.message?.content) {
+            const category = detectCategory(message);
+            responseText = getRandomResponse(category);
+          } else {
+            responseText = data.choices[0].message.content;
+          }
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error('API call error:', fetchError);
+        const category = detectCategory(message);
+        responseText = getRandomResponse(category);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        response: responseText
+      }
+    });
+
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in POST handler:', error);
     return NextResponse.json({
       success: true,
       data: {

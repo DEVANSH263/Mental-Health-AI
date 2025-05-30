@@ -11,9 +11,15 @@ export default function ChatbotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [modelChoice, setModelChoice] = useState<'local' | 'api' | null>(null);
+
+  const handleModelSelect = (choice: 'local' | 'api') => {
+    setModelChoice(choice);
+    setMessages([{ text: `You have selected the ${choice} model. How can I help you today?`, isUser: false }]);
+  };
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || modelChoice === null) return;
 
     // Add user message
     const userMessage = { text: input, isUser: true };
@@ -33,7 +39,7 @@ export default function ChatbotPage() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: currentInput }),
+        body: JSON.stringify({ message: currentInput, model: modelChoice }),
         signal: controller.signal
       });
 
@@ -113,51 +119,73 @@ export default function ChatbotPage() {
         </div>
         <p className="text-gray-400 mb-8">A safe space to share your thoughts and feelings.</p>
         
-        <div className="bg-[#13133D] rounded-3xl p-6 shadow-xl">
-          <div className="h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-900/50 scrollbar-track-transparent mb-6">
-            {messages.map((msg, i) => (
-              <div 
-                key={i} 
-                className={`mb-4 flex ${msg.isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
+        {modelChoice === null && (
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <p className="text-gray-200 text-lg mb-6">Choose a model to chat with:</p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleModelSelect('local')}
+                className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white transition-colors font-medium"
               >
-                <div 
-                  className={`px-5 py-3 max-w-[80%] ${
-                    msg.isUser 
-                      ? 'bg-purple-600 text-white rounded-2xl rounded-tr-sm' 
-                      : msg.text === "Thinking..." 
-                        ? 'bg-[#1D1D4D] text-gray-400 rounded-2xl rounded-tl-sm animate-pulse'
-                        : 'bg-[#1D1D4D] text-gray-200 rounded-2xl rounded-tl-sm'
-                  }`}
-                >
-                  {msg.text}
-                </div>
-              </div>
-            ))}
+                Use Local Model
+              </button>
+              <button
+                onClick={() => handleModelSelect('api')}
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors font-medium"
+              >
+                Use API Model
+              </button>
+            </div>
           </div>
+        )}
 
-          <div className="flex gap-4">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
-              placeholder="Type your message..."
-              className="flex-1 bg-[#1D1D4D] text-gray-200 border-none outline-none placeholder:text-gray-500 py-4 px-5 rounded-2xl"
-              disabled={isLoading}
-            />
-            <button
-              onClick={sendMessage}
-              className={`px-8 rounded-2xl ${
-                isLoading 
-                  ? 'bg-purple-800 cursor-not-allowed' 
-                  : 'bg-purple-600 hover:bg-purple-700'
-              } text-white transition-colors font-medium`}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Sending...' : 'Send'}
-            </button>
+        {modelChoice !== null && (
+          <div className="bg-[#13133D] rounded-3xl p-6 shadow-xl">
+            <div className="h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-900/50 scrollbar-track-transparent mb-6">
+              {messages.map((msg, i) => (
+                <div 
+                  key={i} 
+                  className={`mb-4 flex ${msg.isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                >
+                  <div 
+                    className={`px-5 py-3 max-w-[80%] ${
+                      msg.isUser 
+                        ? 'bg-purple-600 text-white rounded-2xl rounded-tr-sm' 
+                        : msg.text === "Thinking..." 
+                          ? 'bg-[#1D1D4D] text-gray-400 rounded-2xl rounded-tl-sm animate-pulse'
+                          : 'bg-[#1D1D4D] text-gray-200 rounded-2xl rounded-tl-sm'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
+                placeholder="Type your message..."
+                className="flex-1 bg-[#1D1D4D] text-gray-200 border-none outline-none placeholder:text-gray-500 py-4 px-5 rounded-2xl"
+                disabled={isLoading}
+              />
+              <button
+                onClick={sendMessage}
+                className={`px-8 rounded-2xl ${
+                  isLoading 
+                    ? 'bg-purple-800 cursor-not-allowed' 
+                    : 'bg-purple-600 hover:bg-purple-700'
+                } text-white transition-colors font-medium`}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Sending...' : 'Send'}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style jsx global>{`
